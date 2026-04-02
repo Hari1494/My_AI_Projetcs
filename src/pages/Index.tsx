@@ -84,7 +84,6 @@ const Index = () => {
       await addDoc(collection(db, "expenses"), dated);
       toast.success("Expense added successfully");
     } catch (error) {
-
       console.error("Error adding expense: ", error);
       toast.error("Failed to add expense");
     }
@@ -92,13 +91,18 @@ const Index = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Optimistic update: hide from UI immediately
+      setExpenses((prev) => prev.filter((e) => e.id !== id));
+      
       await deleteDoc(doc(db, "expenses", id));
       toast.success("Expense deleted");
     } catch (error) {
       console.error("Error deleting expense: ", error);
-      toast.error("Failed to delete expense");
+      toast.error("Failed to delete expense. Please try again.");
+      // Re-fetch or manually restore state if needed (onSnapshot will normally handle this)
     }
   };
+
 
   const handleSignOut = () => {
     signOut(auth).then(() => toast.success("Signed out"));
