@@ -1,0 +1,127 @@
+import { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
+import { CalendarIcon, Wallet, Banknote, Smartphone } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import ExpenseForm, { type Expense } from "@/components/ExpenseForm";
+import ExpenseList from "@/components/ExpenseList";
+
+const STORAGE_KEY = "expense-tracker-data";
+
+const Index = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  }, [expenses]);
+
+  const currentMonth = selectedDate.getMonth();
+  const currentYear = selectedDate.getFullYear();
+  const selectedDateStr = selectedDate.toDateString();
+
+  const dayExpenses = expenses.filter((e) => new Date(e.date).toDateString() === selectedDateStr);
+  const monthExpenses = expenses.filter((e) => {
+    const d = new Date(e.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const monthlyTotal = useMemo(() => monthExpenses.reduce((s, e) => s + e.amount, 0), [monthExpenses]);
+  const cashTotal = useMemo(() => monthExpenses.filter((e) => e.paymentType === "cash").reduce((s, e) => s + e.amount, 0), [monthExpenses]);
+  const digitalTotal = useMemo(() => monthExpenses.filter((e) => e.paymentType === "digital").reduce((s, e) => s + e.amount, 0), [monthExpenses]);
+
+  const getTotalStatusClass = (total: number) => {
+    if (total < 100) return "text-status-good";
+    if (total < 1000) return "text-status-moderate";
+    return "text-status-excess";
+  };
+
+  const handleAdd = (expense: Expense) => {
+    const dated = { ...expense, date: selectedDate.toISOString() };
+    setExpenses((prev) => [dated, ...prev]);
+  };
+  const handleDelete = (id: string) => setExpenses((prev) => prev.filter((e) => e.id !== id));
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-md px-4 py-6">
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 mb-3">
+            <Wallet className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Expense Tracker</span>
+          </div>
+          <h1 className="font-display text-3xl font-bold text-foreground">
+            Monthly Spending
+          </h1>
+        </div>
+
+        {/* Monthly Total Card */}
+        <Card className="mb-4 border-0 shadow-lg bg-primary text-primary-foreground">
+          <CardContent className="pt-6 pb-6 text-center">
+            <p className="text-sm opacity-80 mb-1">This Month's Total</p>
+            <p className="font-display text-4xl font-bold">₹{monthlyTotal.toFixed(2)}</p>
+            <div className="flex justify-center gap-6 mt-4 text-sm opacity-80">
+              <span className="flex items-center gap-1"><Banknote className="h-3.5 w-3.5" /> Cash: ₹{cashTotal.toFixed(2)}</span>
+              <span className="flex items-center gap-1"><Smartphone className="h-3.5 w-3.5" /> Digital: ₹{digitalTotal.toFixed(2)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Date Picker */}
+        <div className="mb-4 flex justify-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2 font-medium">
+                <CalendarIcon className="h-4 w-4" />
+                {format(selectedDate, "PPP")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(d) => d && setSelectedDate(d)}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Add Expense */}
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-display">Add Expense</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ExpenseForm onAdd={handleAdd} />
+          </CardContent>
+        </Card>
+
+        {/* Day's Expenses */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-display flex items-center justify-between">
+              {selectedDate.toDateString() === new Date().toDateString() ? "Today's" : format(selectedDate, "MMM d")} Expenses
+              <span className={`font-display text-lg ${getTotalStatusClass(dayExpenses.reduce((s, e) => s + e.amount, 0))}`}>
+                ₹{dayExpenses.reduce((s, e) => s + e.amount, 0).toFixed(2)}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ExpenseList expenses={dayExpenses} onDelete={handleDelete} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Index;
