@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Wallet, Banknote, Smartphone, LogOut } from "lucide-react";
+import { CalendarIcon, Wallet, Banknote, Smartphone, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,11 @@ import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, where }
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,16 +102,24 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-md px-4 py-6">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex-1" />
+        <div className="mb-6 flex items-center justify-between gap-2">
+          {isAdmin ? (
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} title="Admin Panel" className="rounded-full">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+            </Button>
+          ) : (
+            <div className="w-10" />
+          )}
+          
           <div className="text-center flex-1">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 mb-3">
               <Wallet className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-primary">Tracker</span>
             </div>
           </div>
+          
           <div className="flex-1 flex justify-end">
-            <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-full">
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out" className="rounded-full">
               <LogOut className="h-5 w-5 text-muted-foreground" />
             </Button>
           </div>
@@ -119,9 +129,12 @@ const Index = () => {
           <h1 className="font-display text-3xl font-bold text-foreground">
             Monthly Spending
           </h1>
-          <p className="text-xs text-muted-foreground mt-1 truncate max-w-[200px] mx-auto opacity-70">
-            {user?.email}
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-xs text-muted-foreground truncate opacity-70">
+              {user?.email}
+            </p>
+            {isAdmin && <span className="text-[10px] uppercase font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded">Admin</span>}
+          </div>
         </div>
 
 
