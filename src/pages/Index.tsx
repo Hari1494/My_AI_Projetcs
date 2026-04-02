@@ -25,11 +25,10 @@ const Index = () => {
   useEffect(() => {
     if (!user) return;
     
-    // Query scoped to the current user's UID
+    // Sort in JS instead of Firestore to avoid "Missing Index" error
     const q = query(
       collection(db, "expenses"), 
-      where("userId", "==", user.uid),
-      orderBy("date", "desc")
+      where("userId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -37,16 +36,21 @@ const Index = () => {
       snapshot.forEach((doc) => {
         expenseData.push({ id: doc.id, ...doc.data() } as Expense);
       });
+      
+      // Sort manually by date descending
+      expenseData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
       setExpenses(expenseData);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching expenses: ", error);
+      console.error("Firestore error:", error);
       toast.error("Failed to load expenses");
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [user]);
+
 
   const currentMonth = selectedDate.getMonth();
   const currentYear = selectedDate.getFullYear();
