@@ -78,11 +78,13 @@ const Index = () => {
       const dated = { 
         ...expense, 
         date: selectedDate.toISOString(),
-        userId: user.uid // Attach user ID to the document
+        userId: user.uid, // Attach user ID for security/scoping
+        userEmail: user.email // Attach email for easy identification in DB
       };
       await addDoc(collection(db, "expenses"), dated);
       toast.success("Expense added successfully");
     } catch (error) {
+
       console.error("Error adding expense: ", error);
       toast.error("Failed to add expense");
     }

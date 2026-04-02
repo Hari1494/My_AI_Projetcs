@@ -40,6 +40,31 @@ const AdminPanel = () => {
     return () => unsubscribe();
   }, [isAdmin]);
 
+  const [selectedUserExpenses, setSelectedUserExpenses] = useState<any[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      setSelectedUserExpenses([]);
+      return;
+    }
+    setLoadingExpenses(true);
+    const q = query(collection(db, "expenses"), where("userId", "==", selectedUserId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const expenseData: any[] = [];
+      snapshot.forEach((doc) => {
+        expenseData.push({ id: doc.id, ...doc.data() });
+      });
+      setSelectedUserExpenses(expenseData);
+      setLoadingExpenses(false);
+    }, (error) => {
+      console.error("Fetch user expenses error:", error);
+      setLoadingExpenses(false);
+    });
+
+    return () => unsubscribe();
+  }, [selectedUserId]);
+
   const selectedUser = users.find(u => u.id === selectedUserId);
 
   const handleRemoveUser = async () => {
@@ -50,16 +75,15 @@ const AdminPanel = () => {
       return;
     }
 
-    const confirmed = window.confirm(`Are you sure you want to remove ${selectedUser.email} and all their data? This action is permanent!`);
+    const confirmed = window.confirm(`Are you sure you want to remove ${selectedUser.email} and all their ${selectedUserExpenses.length} records? This action is permanent!`);
     if (!confirmed) return;
 
     setIsDeleting(true);
     try {
       // 1. Delete user's expenses
-      const expensesQ = query(collection(db, "expenses"), where("userId", "==", selectedUser.id));
-      const expenseSnap = await getDocs(expensesQ);
       const batch = writeBatch(db);
-      expenseSnap.forEach((doc) => batch.delete(doc.ref));
+      const expensesSnap = await getDocs(query(collection(db, "expenses"), where("userId", "==", selectedUser.id)));
+      expensesSnap.forEach((doc) => batch.delete(doc.ref));
       await batch.commit();
 
       // 2. Delete the user document itself
@@ -122,22 +146,42 @@ const AdminPanel = () => {
             </div>
 
             {selectedUser && (
-              <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20 space-y-4 animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-destructive">Danger Zone</p>
-                    <p className="text-xs text-muted-foreground">Removing <b>{selectedUser.email}</b> will delete their account info and all associated expenses forever.</p>
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground ml-1">User's Expenses ({selectedUserExpenses.length})</label>
+                  <div className="max-h-48 overflow-y-auto border rounded-md divide-y divide-border bg-muted/10">
+                    {loadingExpenses ? (
+                        <div className="p-4 text-center text-xs animate-pulse">Loading items...</div>
+                    ) : selectedUserExpenses.length > 0 ? (
+                      selectedUserExpenses.map((exp) => (
+                        <div key={exp.id} className="p-2 px-3 text-[11px] flex justify-between items-center">
+                          <span className="truncate max-w-[140px]">{exp.item}</span>
+                          <span className="font-bold text-primary">₹{exp.amount}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-xs text-muted-foreground italic">No expenses found for this user.</div>
+                    )}
                   </div>
                 </div>
-                <Button 
-                  variant="destructive" 
-                  className="w-full gap-2 font-bold"
-                  onClick={handleRemoveUser}
-                  disabled={isDeleting}
-                >
-                  <Trash2 className="h-4 w-4" /> {isDeleting ? "Removing..." : "Delete User & Data"}
-                </Button>
+
+                <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-destructive">Danger Zone</p>
+                      <p className="text-xs text-muted-foreground">Removing <b>{selectedUser.email}</b> will delete their account info and all {selectedUserExpenses.length} records forever.</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full gap-2 font-bold"
+                    onClick={handleRemoveUser}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" /> {isDeleting ? "Removing..." : "Delete User & Records"}
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -151,6 +195,7 @@ const AdminPanel = () => {
     </div>
   );
 };
+
 
 export default AdminPanel;
 
