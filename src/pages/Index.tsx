@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Wallet, Banknote, Smartphone } from "lucide-react";
+import { CalendarIcon, Wallet, Banknote, Smartphone, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,28 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ExpenseForm, { type Expense } from "@/components/ExpenseForm";
 import ExpenseList from "@/components/ExpenseList";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, where } from "firebase/firestore";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
+import { signOut } from "firebase/auth";
 
 const Index = () => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "expenses"), orderBy("date", "desc"));
+    if (!user) return;
+    
+    // Query scoped to the current user's UID
+    const q = query(
+      collection(db, "expenses"), 
+      where("userId", "==", user.uid),
+      orderBy("date", "desc")
+    );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const expenseData: Expense[] = [];
       snapshot.forEach((doc) => {
@@ -33,7 +44,7 @@ const Index = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const currentMonth = selectedDate.getMonth();
   const currentYear = selectedDate.getFullYear();
@@ -56,8 +67,13 @@ const Index = () => {
   };
 
   const handleAdd = async (expense: Omit<Expense, "id">) => {
+    if (!user) return;
     try {
-      const dated = { ...expense, date: selectedDate.toISOString() };
+      const dated = { 
+        ...expense, 
+        date: selectedDate.toISOString(),
+        userId: user.uid // Attach user ID to the document
+      };
       await addDoc(collection(db, "expenses"), dated);
       toast.success("Expense added successfully");
     } catch (error) {
@@ -76,19 +92,38 @@ const Index = () => {
     }
   };
 
+  const handleSignOut = () => {
+    signOut(auth).then(() => toast.success("Signed out"));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-md px-4 py-6">
         {/* Header */}
-        <div className="mb-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 mb-3">
-            <Wallet className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Expense Tracker</span>
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex-1" />
+          <div className="text-center flex-1">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 mb-3">
+              <Wallet className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Tracker</span>
+            </div>
           </div>
+          <div className="flex-1 flex justify-end">
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-full">
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </div>
+        </div>
+        
+        <div className="text-center mb-6">
           <h1 className="font-display text-3xl font-bold text-foreground">
             Monthly Spending
           </h1>
+          <p className="text-xs text-muted-foreground mt-1 truncate max-w-[200px] mx-auto opacity-70">
+            {user?.email}
+          </p>
         </div>
+
 
         {/* Monthly Total Card */}
         <Card className="mb-4 border-0 shadow-lg bg-primary text-primary-foreground">
