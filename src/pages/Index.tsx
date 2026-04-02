@@ -14,8 +14,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import Logo from "@/components/Logo";
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -28,14 +28,14 @@ const container: Variants = {
 };
 
 const item: Variants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 15 },
   show: { 
     opacity: 1, 
     y: 0, 
     transition: { 
       type: "spring", 
-      stiffness: 300, 
-      damping: 24 
+      stiffness: 260, 
+      damping: 20 
     } 
   }
 };
@@ -143,55 +143,69 @@ const Index = () => {
     >
       <div className="mx-auto max-w-md px-4 py-8">
         {/* Header */}
-        <motion.div variants={item} className="mb-6 flex items-center justify-between gap-2">
+        <motion.div variants={item} className="mb-8 flex items-center justify-between gap-2">
           {isAdmin ? (
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} title="Admin Panel" className="rounded-full shadow-sm">
-              <ShieldCheck className="h-5 w-5 text-primary" />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} title="Admin Panel" className="rounded-2xl shadow-sm hover:scale-110 active:scale-95 transition-all">
+              <ShieldCheck className="h-6 w-6 text-primary" />
             </Button>
           ) : (
             <div className="w-10" />
           )}
           
           <div className="text-center flex-1">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 mb-3">
-              <Wallet className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-primary">Tracker</span>
-            </div>
+            <Logo />
           </div>
           
           <div className="flex-1 flex justify-end">
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out" className="rounded-full shadow-sm">
-              <LogOut className="h-5 w-5 text-muted-foreground" />
+            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign Out" className="rounded-2xl shadow-sm hover:scale-110 active:scale-95 transition-all">
+              <LogOut className="h-6 w-6 text-muted-foreground/30" />
             </Button>
           </div>
         </motion.div>
         
-        <motion.div variants={item} className="text-center mb-8">
-          <h1 className="font-display text-4xl font-black text-foreground tracking-tight">
+        <motion.div variants={item} className="text-center mb-10">
+          <h1 className="font-display text-4xl font-black text-foreground tracking-tighter italic">
             Monthly Spending
           </h1>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <p className="text-xs text-muted-foreground truncate opacity-60">
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <p className="text-xs text-muted-foreground truncate font-medium opacity-50">
               {user?.email}
             </p>
-            {isAdmin && <span className="text-[10px] uppercase font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded-full">Admin</span>}
+            {isAdmin && <span className="text-[9px] uppercase font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full border border-primary/20">Admin</span>}
           </div>
         </motion.div>
 
 
+
         {/* Monthly Total Card */}
         <motion.div variants={item} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-          <Card className="mb-6 border-0 shadow-2xl bg-primary text-primary-foreground">
-            <CardContent className="pt-8 pb-8 text-center">
-              <p className="text-xs uppercase font-bold tracking-widest opacity-70 mb-2">This Month's Total</p>
-              <p className="font-display text-5xl font-black">₹{monthlyTotal.toLocaleString()}</p>
-              <div className="flex justify-center gap-8 mt-6 text-xs font-bold">
-                <span className="flex items-center gap-1.5"><Banknote className="h-4 w-4" /> Cash: ₹{cashTotal.toLocaleString()}</span>
-                <span className="flex items-center gap-1.5"><Smartphone className="h-4 w-4" /> Digital: ₹{digitalTotal.toLocaleString()}</span>
+          <Card className="mb-8 border-0 shadow-2xl bg-gradient-to-br from-primary via-indigo-600 to-pink-500 text-primary-foreground relative overflow-hidden group rounded-[2rem]">
+            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute -right-12 -top-12 p-8 opacity-10 rotate-12">
+              <Wallet className="h-48 w-48" />
+            </div>
+            <CardContent className="pt-10 pb-10 text-center relative z-10">
+              <p className="text-[10px] uppercase font-black tracking-[0.4em] opacity-80 mb-3">Total Monthly Budget</p>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-2xl font-black opacity-50 italic">₹</span>
+                <p className="font-display text-6xl font-black tracking-tighter drop-shadow-2xl">{monthlyTotal.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-center gap-4 mt-8">
+                <div className="flex flex-col items-center gap-1 bg-white/10 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10">
+                  <Banknote className="h-4 w-4 opacity-70" />
+                  <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Cash</span>
+                  <span className="text-sm font-black">₹{cashTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex flex-col items-center gap-1 bg-white/10 px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10">
+                  <Smartphone className="h-4 w-4 opacity-70" />
+                  <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Digital</span>
+                  <span className="text-sm font-black">₹{digitalTotal.toLocaleString()}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
+
 
         {/* Date Picker */}
         <motion.div variants={item} className="mb-6 flex justify-center">

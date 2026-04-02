@@ -8,39 +8,40 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 20% 10%;
+    --background: 240 20% 98%;
+    --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 240 10% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 240 10% 3.9%;
 
-    --primary: 192 70% 36%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 210 20% 98%;
 
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
 
-    --muted: 210 15% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 192 50% 92%;
-    --accent-foreground: 192 70% 26%;
+    --accent: 262 50% 95%;
+    --accent-foreground: 262 83% 48%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 192 70% 36%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.75rem;
+    --radius: 1.5rem;
 
-    --status-good: 142 60% 40%;
-    --status-moderate: 38 92% 50%;
-    --status-excess: 0 72% 51%;
+    --status-good: 142 76% 36%;
+    --status-moderate: 24 95% 53%;
+    --status-excess: 346 84% 61%;
+
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -97,6 +98,12 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased min-h-screen;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(262, 83%, 58%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(346, 84%, 61%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(262, 83%, 58%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(346, 84%, 61%, 0.05) 0px, transparent 50%);
   }
+
 }
