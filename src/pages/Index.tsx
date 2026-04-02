@@ -8,19 +8,32 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ExpenseForm, { type Expense } from "@/components/ExpenseForm";
 import ExpenseList from "@/components/ExpenseList";
-
-const STORAGE_KEY = "expense-tracker-data";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { toast } from "sonner";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-  }, [expenses]);
+    const q = query(collection(db, "expenses"), orderBy("date", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const expenseData: Expense[] = [];
+      snapshot.forEach((doc) => {
+        expenseData.push({ id: doc.id, ...doc.data() } as Expense);
+      });
+      setExpenses(expenseData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching expenses: ", error);
+      toast.error("Failed to load expenses");
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const currentMonth = selectedDate.getMonth();
   const currentYear = selectedDate.getFullYear();
@@ -42,11 +55,26 @@ const Index = () => {
     return "text-status-excess";
   };
 
-  const handleAdd = (expense: Expense) => {
-    const dated = { ...expense, date: selectedDate.toISOString() };
-    setExpenses((prev) => [dated, ...prev]);
+  const handleAdd = async (expense: Omit<Expense, "id">) => {
+    try {
+      const dated = { ...expense, date: selectedDate.toISOString() };
+      await addDoc(collection(db, "expenses"), dated);
+      toast.success("Expense added successfully");
+    } catch (error) {
+      console.error("Error adding expense: ", error);
+      toast.error("Failed to add expense");
+    }
   };
-  const handleDelete = (id: string) => setExpenses((prev) => prev.filter((e) => e.id !== id));
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "expenses", id));
+      toast.success("Expense deleted");
+    } catch (error) {
+      console.error("Error deleting expense: ", error);
+      toast.error("Failed to delete expense");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,7 +129,7 @@ const Index = () => {
             <CardTitle className="text-base font-display">Add Expense</CardTitle>
           </CardHeader>
           <CardContent>
-            <ExpenseForm onAdd={handleAdd} />
+            <ExpenseForm onAdd={handleAdd as any} />
           </CardContent>
         </Card>
 
@@ -116,7 +144,11 @@ const Index = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ExpenseList expenses={dayExpenses} onDelete={handleDelete} />
+            {loading ? (
+              <div className="py-8 text-center text-muted-foreground animate-pulse">Loading...</div>
+            ) : (
+              <ExpenseList expenses={dayExpenses} onDelete={handleDelete} />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -125,3 +157,4 @@ const Index = () => {
 };
 
 export default Index;
+
